@@ -1,63 +1,23 @@
-﻿using Microsoft.AspNetCore.DataProtection.KeyManagement;
-using System.Net.Http;
+﻿using conj_v2.Models;
+using conj_v2.Services;
 
 var builder = WebApplication.CreateBuilder(args);
-builder.Services.AddHttpClient();
+builder.Services.AddScoped<IAiService, AiService>();
 
 var app = builder.Build();
 app.UseHttpsRedirection();
 
-app.MapGet("/{verb}", async (string verb, HttpClient httpClient, IConfiguration config) =>
+app.MapGet("/{verb}", async (string verb, IAiService aiService, CancellationToken ct) =>
 {
+    const string prompt = $"Conjugate the given French verb in these tenses: présent and futur proche.";
     try
     {
-        var apiKey = config["OpenRouter:ApiKey"];
-        if (string.IsNullOrEmpty(apiKey))
-        {
-            return Results.BadRequest("API Key не настроен. Запусти: dotnet user-secrets set \"OpenRouter:ApiKey\" \"твой-ключ\"");
-        }
-
-        var prompt = $"Conjugate the French verb '{verb}' in présent tense. Return only JSON with forms.";
-
-        var requestBody = new
-        {
-            model = "openai/gpt-4o-mini",
-            messages = new[] { new { role = "user", content = prompt } },
-            max_tokens = 200
-        };
-
-        var json = System.Text.Json.JsonSerializer.Serialize(requestBody);
-        var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
-
-        httpClient.DefaultRequestHeaders.Clear();
-        httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
-        httpClient.DefaultRequestHeaders.Add("HTTP-Referer", "http://localhost:5000");
-
-        var response = await httpClient.PostAsync("https://openrouter.ai/api/v1/chat/completions", content);
-        var responseText = await response.Content.ReadAsStringAsync();
-
-        if (response.IsSuccessStatusCode)
-        {
-            return Results.Ok(new { 
-                success = true, 
-                verb = verb,
-                apiResponse = responseText 
-            });
-        }
-        else
-        {
-            return Results.BadRequest(new { 
-                success = false, 
-                error = responseText 
-            });
-        }
+        var response = await aiService.ChatAsync<MultiTenseFrenchConjugation>("openai/gpt-4o-mini", prompt, verb, ct);
+        return Results.Ok(new { success = true, content = response.Content });
     }
     catch (Exception ex)
     {
-        return Results.BadRequest(new { 
-            success = false, 
-            error = ex.Message 
-        });
+        return Results.BadRequest(new { success = false, error = ex.Message });
     }
 });
 
