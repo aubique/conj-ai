@@ -1,12 +1,26 @@
 ﻿using conj_v2.Models;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.SemanticKernel.Connectors.OpenAI;
+using System.Data;
+using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddFixedWindowLimiter("ip", configure =>
+    {
+        configure.PermitLimit = 1;
+        configure.Window = TimeSpan.FromMinutes(1);
+    });
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+});
+
 var app = builder.Build();
 app.UseHttpsRedirection();
+if (!app.Environment.IsDevelopment()) app.UseRateLimiter();
 
 app.MapGet("/{verb}", async (string verb, IConfiguration config, CancellationToken ct) =>
 {
@@ -17,16 +31,16 @@ app.MapGet("/{verb}", async (string verb, IConfiguration config, CancellationTok
         ResponseFormat = typeof(MultiTenseFrenchConjugation),
         Temperature = 0,
     };
-    var modelId = config["OpenRouter:Model"];
-    var endpoint = config["OpenRouter:BaseUrl"];
-    var apiKey = config["OpenRouter:ApiKey"];
+    var modelId = config["OpenAI:Model"];
+    var endpoint = config["OpenAI:Endpoint"];
+    var apiKey = config["OpenAI:ApiKey"];
 
     try
     {
         List<Exception> exceptions = [];
-        if (modelId is null) exceptions.Add(new Exception("Model not found"));
-        if (endpoint is null) exceptions.Add(new Exception("BaseUrl not found"));
-        if (apiKey is null) exceptions.Add(new Exception("ApiKey not found"));
+        if (modelId is null) exceptions.Add(new Exception("Model is not found"));
+        if (endpoint is null) exceptions.Add(new Exception("Endpoint is not found"));
+        if (apiKey is null) exceptions.Add(new Exception("ApiKey is not found"));
         if (exceptions.Count > 0) throw new AggregateException(exceptions);
     }
     catch (AggregateException aggregateEx)
@@ -44,15 +58,17 @@ app.MapGet("/{verb}", async (string verb, IConfiguration config, CancellationTok
 
     try
     {
-        var response = await kernel.GetRequiredService<IChatCompletionService>()
-            .GetChatMessageContentAsync(chat, executionSettings, kernel, ct);
+        var jsonContent = (await kernel.GetRequiredService<IChatCompletionService>()
+            .GetChatMessageContentAsync(chat, executionSettings, kernel, ct))
+            .Content ?? throw new NoNullAllowedException("JSON Content is invalid");
 
-        return Results.Ok(new { success = true, content = response.Content });
+        var result = JsonSerializer.Deserialize<MultiTenseFrenchConjugation>(jsonContent);
+        return Results.Ok(result);
     }
     catch (Exception ex)
     {
         return Results.BadRequest(new { success = false, error = ex.Message });
     }
-});
+}).RequireRateLimiting("ip");
 
 app.Run();

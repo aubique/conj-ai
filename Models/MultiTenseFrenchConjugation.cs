@@ -1,10 +1,8 @@
 ﻿namespace conj_v2.Models;
 
-public class MultiTenseFrenchConjugation
-{
-    public string Infinitive { get; init; } = "";
-    //public Dictionary<string, FrenchConjugation> Tenses { get; init; } = [];
-    public FrenchConjugation? Present { get; init; }
-    public FrenchConjugation? FuturSimple { get; init; }
-    public FrenchConjugation? PasseCompose { get; init; }
-}
+public record MultiTenseFrenchConjugation(string? Infinitive,
+                                          FrenchConjugation? Present,
+                                          FrenchConjugation? PasseCompose,
+                                          FrenchConjugation? FuturSimple,
+                                          FrenchConjugation? Imparfait,
+                                          FrenchConjugation? ConditionnelPresent);
