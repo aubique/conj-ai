@@ -1,4 +1,4 @@
-﻿namespace conj_v2.Models;
+﻿namespace conj_ai.Models;
 
 public record MultiTenseFrenchConjugation(string? Infinitive,
                                           FrenchConjugation? Present,

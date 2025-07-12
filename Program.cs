@@ -1,4 +1,4 @@
-﻿using conj_v2.Models;
+﻿using conj_ai.Models;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
