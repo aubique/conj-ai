@@ -7,20 +7,25 @@ using System.Data;
 using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
-
 builder.Services.AddRateLimiter(options =>
 {
     options.AddFixedWindowLimiter("ip", configure =>
     {
-        configure.PermitLimit = 1;
+        configure.PermitLimit = 2;
         configure.Window = TimeSpan.FromMinutes(1);
     });
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
 });
 
 var app = builder.Build();
-app.UseHttpsRedirection();
-if (!app.Environment.IsDevelopment()) app.UseRateLimiter();
+if (app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
+else
+{
+    app.UseRateLimiter();
+}
 
 app.MapGet("/{verb}", async (string verb, IConfiguration config, CancellationToken ct) =>
 {
