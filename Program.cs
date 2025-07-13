@@ -5,6 +5,7 @@ builder.Services.AddControllers();
 builder.Services.AddMediatR(cfg =>
 {
     cfg.RegisterServicesFromAssembly(typeof(Program).Assembly);
+    cfg.RegisterGenericHandlers = true;
 });
 builder.Services.AddRateLimiter(options =>
 {
