@@ -2,6 +2,10 @@ using Microsoft.AspNetCore.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
+builder.Services.AddMediatR(cfg =>
+{
+    cfg.RegisterServicesFromAssembly(typeof(Program).Assembly);
+});
 builder.Services.AddRateLimiter(options =>
 {
     options.AddFixedWindowLimiter("ip", configure =>
