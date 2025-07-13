@@ -16,6 +16,11 @@
 
   <ItemGroup>
     <None Include=".github\README.md" />
+    <None Include="D:\dev\pet\conj-ai\.editorconfig" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EditorConfigFiles Remove="D:\dev\pet\conj-ai\.editorconfig" />
   </ItemGroup>
 
 </Project>

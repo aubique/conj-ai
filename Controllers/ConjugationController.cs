@@ -1,12 +1,12 @@
-﻿using conj_ai.Models;
+using System.Data;
+using System.Text.Json;
+using conj_ai.Models;
 using Microsoft.AspNetCore.DataProtection.KeyManagement;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.SemanticKernel.Connectors.OpenAI;
-using System.Data;
-using System.Text.Json;
 
 namespace conj_ai.Controllers;
 
@@ -31,7 +31,7 @@ public class ConjugationController : ControllerBase
         var apiKey = config["OpenAI:ApiKey"];
 
         Console.WriteLine(verb);
-    
+
         try
         {
             List<Exception> exceptions = [];
@@ -43,22 +43,22 @@ public class ConjugationController : ControllerBase
         catch (AggregateException aggregateEx)
         {
             var errors = aggregateEx.InnerExceptions.Select(e => e.Message).ToList();
-                Console.WriteLine($"Configuration missed: {string.Join(", ", errors)}");
+            Console.WriteLine($"Configuration missed: {string.Join(", ", errors)}");
             return NotFound(new { success = false, errors });
         }
-    
+
         var kernel = Kernel.CreateBuilder()
             .AddOpenAIChatCompletion(modelId!, new Uri(endpoint!), apiKey).Build();
-    
+
         chat.AddSystemMessage(prompt);
         chat.AddUserMessage(verb);
-        
+
         try
         {
             var jsonContent = (await kernel.GetRequiredService<IChatCompletionService>()
                 .GetChatMessageContentAsync(chat, executionSettings, kernel, ct))
                 .Content ?? throw new NoNullAllowedException("JSON Content is invalid");
-        
+
             var result = JsonSerializer.Deserialize<MultiTenseFrenchConjugation>(jsonContent);
             return Ok(result);
         }

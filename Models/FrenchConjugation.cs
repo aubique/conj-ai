@@ -1,4 +1,4 @@
-﻿namespace conj_ai.Models;
+namespace conj_ai.Models;
 
 public record FrenchConjugation(string? Je,
                                 string? Tu,
