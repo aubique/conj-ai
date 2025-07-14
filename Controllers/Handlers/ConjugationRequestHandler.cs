@@ -1,4 +1,5 @@
 using System.Data;
+using System.Net;
 using System.Text.Json;
 using conj_ai.Models;
 using conj_ai.Utils;
@@ -16,7 +17,7 @@ public class ConjugationRequestHandler<T>(IConfiguration config) : IRequestHandl
 {
     public async Task<T> Handle(ConjugationQuery<T> request, CancellationToken ct)
     {
-        const string prompt = "Conjugate the given French verb in these tenses";
+        var prompt = $"Conjugate the given {T.Language} verb in these tenses";
         var chat = new ChatHistory();
         var executionSettings = new OpenAIPromptExecutionSettings
         {
@@ -25,9 +26,9 @@ public class ConjugationRequestHandler<T>(IConfiguration config) : IRequestHandl
         };
 
         if (!ConjugationValidators.TryGetConfiguration(
-            config, out var modelId, out var endpoint, out var apiKey, out var ex))
+            config, out var modelId, out var endpoint, out var apiKey, out var missingKeys))
         {
-            throw new AggregateException(ex);
+            throw new ConfigurationException($"Missing configuration: {string.Join(", ", missingKeys)}");
         }
 
         var kernel = Kernel.CreateBuilder()
@@ -37,10 +38,24 @@ public class ConjugationRequestHandler<T>(IConfiguration config) : IRequestHandl
         chat.AddSystemMessage(prompt);
         chat.AddUserMessage(request.SearchTerm);
 
-        var jsonContent = (await kernel.GetRequiredService<IChatCompletionService>()
-            .GetChatMessageContentAsync(chat, executionSettings, kernel, ct))
-            .Content ?? throw new NoNullAllowedException("AI response is invalid");
+        try
+        {
+            var jsonContent = (await kernel.GetRequiredService<IChatCompletionService>()
+                .GetChatMessageContentAsync(chat, executionSettings, kernel, ct))
+                .Content ?? throw new NoNullAllowedException("AI response is invalid");
 
-        return JsonSerializer.Deserialize<T>(jsonContent) ?? throw new Exception();
+            return JsonSerializer.Deserialize<T>(jsonContent)
+                ?? throw new NoNullAllowedException("Cannot deserialize");
+        }
+        catch (HttpOperationException ex)
+        {
+            Console.WriteLine($"{ex.StatusCode} : {(int?)ex.StatusCode}");
+
+            throw ex.StatusCode switch
+            {
+                HttpStatusCode.Unauthorized => new UnauthorizedException(ex.Message),
+            };
+            throw;
+        }
     }
 }

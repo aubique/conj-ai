@@ -8,17 +8,17 @@ public static class ConjugationValidators
         [NotNullWhen(true)] out string? modelId,
         [NotNullWhen(true)] out string? endpoint,
         [NotNullWhen(true)] out string? apiKey,
-        [NotNullWhen(false)] out List<Exception>? exceptions)
+        [NotNullWhen(false)] out List<string>? missingKeys)
     {
         modelId = config["OpenAI:Model"];
         endpoint = config["OpenAI:Endpoint"];
         apiKey = config["OpenAI:ApiKey"];
 
-        exceptions = [];
-        if (modelId is null) exceptions.Add(new Exception("Model is not found"));
-        if (endpoint is null) exceptions.Add(new Exception("Endpoint is not found"));
-        if (apiKey is null) exceptions.Add(new Exception("ApiKey is not found"));
-        if (exceptions.Count > 0) return false;
+        missingKeys = [];
+        if (modelId is null) missingKeys.Add("OpenAI:Model");
+        if (endpoint is null) missingKeys.Add("OpenAI:Endpoint");
+        if (apiKey is null) missingKeys.Add("OpenAI:ApiKey");
+        if (missingKeys.Count > 0) return false;
 
         return true;
     }

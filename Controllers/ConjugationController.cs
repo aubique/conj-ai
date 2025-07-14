@@ -1,4 +1,4 @@
-using conj_ai.Controllers.Conjugation.Handlers;
+using conj_ai.Controllers.Handlers;
 using conj_ai.Models.French;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
