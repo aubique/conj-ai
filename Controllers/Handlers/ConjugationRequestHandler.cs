@@ -53,7 +53,7 @@ public class ConjugationRequestHandler<T>(IConfiguration config) : IRequestHandl
 
             throw ex.StatusCode switch
             {
-                HttpStatusCode.Unauthorized => new UnauthorizedException(ex.Message),
+                HttpStatusCode.Unauthorized => new UnauthorizedAiException(ex.Message),
             };
             throw;
         }

@@ -1,3 +1,4 @@
+using conj_ai.Middleware;
 using Microsoft.AspNetCore.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -18,7 +19,7 @@ builder.Services.AddRateLimiter(options =>
 });
 
 var app = builder.Build();
-app.MapControllers();
+app.UseMiddleware<SimpleExceptionMiddleware>();
 if (app.Environment.IsDevelopment())
 {
     app.UseHttpsRedirection();
@@ -27,5 +28,5 @@ else
 {
     app.UseRateLimiter();
 }
-
+app.MapControllers();
 app.Run();
